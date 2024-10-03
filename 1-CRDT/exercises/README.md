@@ -7,6 +7,7 @@
 git clone https://github.com/ptal/lattice-theory-parallel-programming-uni.lu.git
 cd lattice-theory-parallel-programming-uni.lu/1-CRDT/exercise 
 conda env create -f environment.yml
+conda activate lattice_gym
 ```
 or
 ```bash
