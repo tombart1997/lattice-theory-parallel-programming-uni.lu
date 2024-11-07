@@ -7,3 +7,9 @@ Exercises for the course Lattice Theory for Parallel Programming @University of 
 * `1-CRDT/README.md`: illustrates the requirements for the exercises.
 * `1-CRDT/exercises`: contains the exercises and environment (`.py` and `.yml` files).
 * `1-CRDT/solutions`: contains the solution of the exercises.
+
+## Observed remove set (`2-OR_set`)
+
+* the requirements for the exercises is on Moodle.
+* `2-OR_set/exercises`: contains the exercises and environment (`.py` and `.yml` files).
+* `2-OR_set/solutions`: contains the solution of the exercises.
