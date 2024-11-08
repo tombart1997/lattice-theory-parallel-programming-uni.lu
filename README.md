@@ -10,6 +10,11 @@ Exercises for the course Lattice Theory for Parallel Programming @University of 
 
 ## Observed remove set (`2-OR_set`)
 
-* the requirements for the exercises is on Moodle.
+* the requirements file for the exercises is on Moodle.
 * `2-OR_set/exercises`: contains the exercises and environment (`.py` and `.yml` files).
 * `2-OR_set/solutions`: contains the solution of the exercises.
+
+## Project 1: Parallel Not Equal (`3-Parallel_Not-Equal`)
+
+* the requirements file for the project is on Moodle.
+* `3-Parallel_Not-Equal`: contains the testing data and its related files (`.txt`, `.hpp`, and `.py` files).
