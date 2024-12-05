@@ -243,10 +243,10 @@ private:
             return std::any_cast<ASTNode>(sv[0]);
         }
         else{
-            ASTNode block_node(NodeType::BLOCKCBODY, std::string("BlockBody"));
+            ASTNode seq(NodeType::SEQUENCE, std::string(";"));
             for (size_t i = 0; i < sv.size(); ++i){
                 try{
-                    block_node.children.push_back(std::any_cast<ASTNode>(sv[i]));
+                    seq.children.push_back(std::any_cast<ASTNode>(sv[i]));
                 }
                 catch(std::bad_any_cast){
                     // pre-condition in this version is comment, still is string;
@@ -254,7 +254,7 @@ private:
                     continue;
                 }
             }
-            return block_node;
+            return seq;
         }
     }
 

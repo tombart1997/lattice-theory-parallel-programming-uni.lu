@@ -21,7 +21,7 @@ Exercises for the course Lattice Theory for Parallel Programming @University of 
 
 ## Project 2: Abstract Interpreter (`4-Abstract-Interpreter`)
 
-* the requiremnts file for the project is on Moodel.
+* the requirement file for the project is on Moodle.
 * `4-Abstract-Interpreter/README.md`: describes the usage of abstract syntax tree parser
 * `4-Abstract-Interpreter/CMakeLists.txt`: contains the dependency for building the abstract syntax tree.
 * `4-Abstract-Interpreter/include`: there are two header files, `ast.hpp`, `parser.hpp`, to define the structure of abstract syntax tree.
