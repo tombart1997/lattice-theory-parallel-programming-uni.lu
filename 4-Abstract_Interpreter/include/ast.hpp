@@ -30,12 +30,13 @@ std::ostream& operator<<(std::ostream& os, LogicOp lop){
     return os;
 }
 
-enum class NodeType {VARIABLE, INTEGER, PRE_CON, ARITHM_OP, LOGIC_OP, DECLARATION, ASSIGNMENT, IFELSE, WHILELOOP, SEQUENCE};
+enum class NodeType {VARIABLE, INTEGER, PRE_CON, POST_CON, ARITHM_OP, LOGIC_OP, DECLARATION, ASSIGNMENT, IFELSE, WHILELOOP, SEQUENCE};
 std::ostream& operator<<(std::ostream& os, NodeType type) {
     switch (type) {
         case NodeType::VARIABLE: os << "Variable"; break;
         case NodeType::INTEGER: os << "Integer"; break;
-        case NodeType::PRE_CON: os << "Pre-conditions"; break;
+        case NodeType::PRE_CON: os << "Pre conditions"; break;
+        case NodeType::POST_CON: os << "Post conditions"; break;
         case NodeType::ARITHM_OP: os << "Arithmetic Operation"; break;
         case NodeType::LOGIC_OP: os << "Logic Operation"; break;
         case NodeType::DECLARATION: os << "Declaration"; break;
@@ -80,22 +81,8 @@ struct ASTNode {
 
     void print(int depth = 0) const {
         std::string indent(depth * 2, ' ');
-        std::cout << indent << "NodeType: ";
-        switch (type) {
-            case NodeType::VARIABLE: std::cout << "Variable"; break;
-            case NodeType::INTEGER: std::cout << "Integer"; break;
-            case NodeType::PRE_CON: std::cout << "Pre-condition"; break;
-            case NodeType::ARITHM_OP: std::cout << "Arithmetic Operator"; break;
-            case NodeType::LOGIC_OP: std::cout << "Logic Operator"; break;
-            case NodeType::DECLARATION: std::cout << "Declaration"; break;
-            case NodeType::ASSIGNMENT: std::cout << "Assignment"; break;
-            case NodeType::IFELSE: std::cout << "If-Else"; break;
-            case NodeType::WHILELOOP: std::cout << "While-Loop"; break;
-            case NodeType::SEQUENCE: std::cout << "BlockBody"; break;
-        }
-        std::cout << ", Value: ";
+        std::cout << indent << "NodeType: " << type << ", Value: ";
         printVariant(value);
-
         for (const auto& child : children) {
             child.print(depth + 1);
         }
