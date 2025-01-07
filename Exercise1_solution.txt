@@ -1,0 +1,381 @@
+had to redo the readme for windows compatability.
+every test successfully completed as the output shows:
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy1.c
+Parsing program `tests\easy1.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Sequence, Value: ;
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: a
+      NodeType: Integer, Value: 1
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: ==   
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 1
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy2.c
+Parsing program `tests\easy2.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0        
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a   
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b   
+  NodeType: Sequence, Value: ;     
+    NodeType: Assignment, Value: = 
+      NodeType: Variable, Value: a 
+      NodeType: Integer, Value: 1  
+    NodeType: Assignment, Value: = 
+      NodeType: Variable, Value: b 
+      NodeType: Integer, Value: 1
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: ==
+        NodeType: Variable, Value: a
+        NodeType: Variable, Value: b
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy3.c
+Parsing program `tests\easy3.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: a
+      NodeType: Integer, Value: 1
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: b
+      NodeType: Arithmetic Operation, Value: +
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 1
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <
+        NodeType: Variable, Value: a
+        NodeType: Variable, Value: b
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy4.c
+Parsing program `tests\easy4.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 0
+        NodeType: Variable, Value: a
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 2
+        NodeType: Variable, Value: a
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: b
+      NodeType: Arithmetic Operation, Value: +
+        NodeType: Variable, Value: a
+        NodeType: Variable, Value: a
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 0
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 4
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy5.c
+Parsing program `tests\easy5.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 0
+        NodeType: Variable, Value: a
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 2
+        NodeType: Variable, Value: a
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: b
+      NodeType: Arithmetic Operation, Value: *
+        NodeType: Arithmetic Operation, Value: +
+          NodeType: Variable, Value: a
+          NodeType: Variable, Value: a
+        NodeType: Integer, Value: 2
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 0
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 8
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy6.c
+Parsing program `tests\easy6.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 2
+        NodeType: Variable, Value: a
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 4
+        NodeType: Variable, Value: a
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: b
+      NodeType: Arithmetic Operation, Value: *
+        NodeType: Arithmetic Operation, Value: +
+          NodeType: Variable, Value: a
+          NodeType: Variable, Value: a
+        NodeType: Integer, Value: 2
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 8
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 16
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy7.c
+Parsing program `tests\easy7.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 2
+        NodeType: Variable, Value: a
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 4
+        NodeType: Variable, Value: a
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: b
+      NodeType: Arithmetic Operation, Value: /
+        NodeType: Arithmetic Operation, Value: +
+          NodeType: Variable, Value: a
+          NodeType: Variable, Value: a
+        NodeType: Integer, Value: 2
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 2
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 4
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy8.c
+Parsing program `tests\easy8.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 2
+        NodeType: Variable, Value: a
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 4
+        NodeType: Variable, Value: a
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: b
+      NodeType: Arithmetic Operation, Value: /
+        NodeType: Arithmetic Operation, Value: *
+          NodeType: Variable, Value: a
+          NodeType: Variable, Value: a
+        NodeType: Variable, Value: a
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 1
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: b
+        NodeType: Integer, Value: 8
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\easy9.c
+Parsing program `tests\easy9.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+    NodeType: Variable, Value: b
+    NodeType: Variable, Value: c
+    NodeType: Variable, Value: d
+    NodeType: Variable, Value: e
+  NodeType: Sequence, Value: ;
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: a
+      NodeType: Integer, Value: 23
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: b
+      NodeType: Integer, Value: 5
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: c
+      NodeType: Arithmetic Operation, Value: +
+        NodeType: Variable, Value: a
+        NodeType: Variable, Value: b
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: d
+      NodeType: Arithmetic Operation, Value: +
+        NodeType: Variable, Value: a
+        NodeType: Variable, Value: c
+    NodeType: Assignment, Value: =
+      NodeType: Variable, Value: e
+      NodeType: Arithmetic Operation, Value: +
+        NodeType: Variable, Value: d
+        NodeType: Variable, Value: c
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: ==
+        NodeType: Variable, Value: e
+        NodeType: Integer, Value: 79
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\ifelse1.c
+Parsing program `tests\ifelse1.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 0
+        NodeType: Variable, Value: a
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 1
+        NodeType: Variable, Value: a
+    NodeType: If-Else, Value: IfElse
+      NodeType: If-Else, Value: Condition
+        NodeType: Logic Operation, Value: ==
+          NodeType: Variable, Value: a
+          NodeType: Integer, Value: 0
+      NodeType: If-Else, Value: If-Body
+        NodeType: Assignment, Value: =
+          NodeType: Variable, Value: a
+          NodeType: Integer, Value: 10
+      NodeType: If-Else, Value: Else-Body
+        NodeType: Assignment, Value: =
+          NodeType: Variable, Value: a
+          NodeType: Integer, Value: 11
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 10
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 11
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\ifelse2.c
+Parsing program `tests\ifelse2.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 0
+        NodeType: Variable, Value: b
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 1
+        NodeType: Variable, Value: b
+    NodeType: If-Else, Value: IfElse
+      NodeType: If-Else, Value: Condition
+        NodeType: Logic Operation, Value: ==
+          NodeType: Variable, Value: b
+          NodeType: Integer, Value: 0
+      NodeType: If-Else, Value: If-Body
+        NodeType: Assignment, Value: =
+          NodeType: Variable, Value: a
+          NodeType: Integer, Value: 1
+      NodeType: If-Else, Value: Else-Body
+        NodeType: Assignment, Value: =
+          NodeType: Variable, Value: a
+          NodeType: Integer, Value: 2
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 2
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 1
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>build\Debug\absint.exe tests\ifelse3.c
+Parsing program `tests\ifelse3.c`...
+Parsing succeeded!
+NodeType: Integer, Value: 0
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: a
+  NodeType: Declaration, Value: int
+    NodeType: Variable, Value: b
+  NodeType: Sequence, Value: ;
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 0
+        NodeType: Variable, Value: a
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 10
+        NodeType: Variable, Value: a
+    NodeType: Pre conditions, Value: PreCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Integer, Value: 0
+        NodeType: Variable, Value: b
+      NodeType: Logic Operation, Value: >=
+        NodeType: Integer, Value: 2
+        NodeType: Variable, Value: b
+    NodeType: If-Else, Value: IfElse
+      NodeType: If-Else, Value: Condition
+        NodeType: Logic Operation, Value: ==
+          NodeType: Variable, Value: b
+          NodeType: Integer, Value: 0
+      NodeType: If-Else, Value: If-Body
+        NodeType: Assignment, Value: =
+          NodeType: Variable, Value: a
+          NodeType: Integer, Value: 1
+      NodeType: If-Else, Value: Else-Body
+        NodeType: If-Else, Value: IfElse
+          NodeType: If-Else, Value: Condition
+            NodeType: Logic Operation, Value: ==
+              NodeType: Variable, Value: b
+              NodeType: Integer, Value: 1
+          NodeType: If-Else, Value: If-Body
+            NodeType: Assignment, Value: =
+              NodeType: Variable, Value: a
+              NodeType: Integer, Value: 2
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: <=
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 10
+    NodeType: Post conditions, Value: PostCon
+      NodeType: Logic Operation, Value: >=
+        NodeType: Variable, Value: a
+        NodeType: Integer, Value: 0
+
+C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter>
