@@ -299,7 +299,12 @@ void handleIfElse(ASTNode& node) {
 
     // Restrict condition in else-branch (b != conditionValue → valid remaining range)
     Interval originalInterval = intervalStore.getInterval(conditionVar);
-    Interval negatedCondition;
+    Interval negatedCondition = originalInterval.intersect(Interval(
+        std::numeric_limits<int>::min(), conditionInterval.lower - 1
+    ).join(
+        Interval(conditionInterval.upper + 1, std::numeric_limits<int>::max())
+    ));
+
 
     std::cout << "[DEBUG] Original interval of " << conditionVar << " before negation: " 
               << originalInterval.lower << " to " << originalInterval.upper << std::endl;
@@ -347,7 +352,11 @@ void handleIfElse(ASTNode& node) {
         elseBranchInterval = originalInterval;
     }
 
-    Interval mergedInterval = ifBranchInterval.join(elseBranchInterval);
+    Interval mergedInterval = Interval(
+        std::min(ifBranchInterval.lower, elseBranchInterval.lower),
+        std::max(ifBranchInterval.upper, elseBranchInterval.upper)
+    );
+
 
     if (mergedInterval.lower > mergedInterval.upper) {
         std::cerr << "[ERROR] Invalid merge! Setting default valid range.\n";
