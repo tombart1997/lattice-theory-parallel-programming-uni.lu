@@ -7,49 +7,44 @@
 class AbstractInterpreter {
 public:
     IntervalStore intervalStore;
+    bool preconditionsProcessed = false;
+
 
     void eval(ASTNode& node) {
-        std::cout << "[DEBUG] Evaluating NodeType: " << node.type << std::endl;
+        if (!preconditionsProcessed && node.type == NodeType::SEQUENCE) {
+            std::cout << "[DEBUG] Handling preconditions once.\n";
+            for (auto& child : node.children) {
+                if (child.type == NodeType::PRE_CON) {
+                    handlePreconditions(child);
+                }
+            }
+            preconditionsProcessed = true;
+        }
 
+        std::cout << "[DEBUG] Evaluating NodeType: " << node.type << std::endl;
+        
         switch (node.type) {
-            case NodeType::PRE_CON:
-                std::cout << "[DEBUG] Handling precondition." << std::endl;
-                handlePreconditions(node);
-                break;
             case NodeType::ASSIGNMENT:
-                std::cout << "[DEBUG] Handling assignment." << std::endl;
                 handleAssignment(node);
                 break;
             case NodeType::POST_CON:
-                std::cout << "[DEBUG] Checking assertion." << std::endl;
                 checkAssertion(node);
                 break;
             case NodeType::IFELSE:
-                std::cout << "[DEBUG] Handling if-else." << std::endl;
                 handleIfElse(node);
                 break;
-            case NodeType::ARITHM_OP:
-                std::cout << "[DEBUG] Evaluating arithmetic operation." << std::endl;
-                evalArithmetic(node);
-                break;
             default:
-                std::cout << "[DEBUG] Traversing children of " << node.type << std::endl;
                 for (auto& child : node.children) {
                     eval(child);
                 }
         }
     }
+
 private:
 
 
     void handlePreconditions(ASTNode& node) {
         std::cout << "[DEBUG] Entering handlePreconditions()\n";
-
-        if (node.children.empty()) {
-            std::cerr << "[ERROR] No conditions found in precondition node!\n";
-            return;
-        }
-
         std::string varName;
         Interval interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());  // Initialize properly
 
@@ -61,8 +56,6 @@ private:
 
             LogicOp op;
             bool validLogicOp = false;
-
-            // ✅ Convert condition.value to LogicOp correctly
             std::visit([&](auto&& value) {
                 using T = std::decay_t<decltype(value)>;
                 if constexpr (std::is_same_v<T, LogicOp>) {
@@ -232,86 +225,140 @@ private:
         }
     }
 
+    
 void handleIfElse(ASTNode& node) {
+    std::cout << "[DEBUG] Entering handleIfElse()" << std::endl;
+
     // Extract Condition and Branches
-    ASTNode& condition = node.children[0];  // "Condition" wrapper
+    if (node.children.size() < 2) {
+        std::cerr << "[ERROR] Malformed if-else statement (not enough children)!" << std::endl;
+        return;
+    }
+
+    ASTNode& condition = node.children[0];
+    ASTNode& ifBodyNode = node.children[1];
+    ASTNode* elseBodyNode = (node.children.size() > 2) ? &node.children[2] : nullptr;
+
     if (condition.children.empty()) {
-        std::cerr << "[ERROR] Malformed if condition!" << std::endl;
+        std::cerr << "[ERROR] Malformed if condition! No children." << std::endl;
         return;
     }
 
-    ASTNode& logicOp = condition.children[0];  // Actual logical operation (e.g., "a == 0")
-    ASTNode& ifBodyNode = node.children[1];  // "If-Body"
-    ASTNode* elseBodyNode = (node.children.size() > 2) ? &node.children[2] : nullptr;  // "Else-Body" (optional)
+    ASTNode& logicOp = condition.children[0];
 
-    std::cout << "[DEBUG] Processing if condition." << std::endl;
+    std::cout << "[DEBUG] Extracted condition node: " << logicOp.type << std::endl;
 
-    if (logicOp.children.size() < 2) {
-        std::cerr << "[ERROR] Malformed logical operation in if statement!" << std::endl;
+    if (logicOp.children.size() != 2) {
+        std::cerr << "[ERROR] Malformed logical operation in if statement (wrong number of operands)!" << std::endl;
         return;
     }
 
-    Interval conditionInterval;
     std::string conditionVar;
-
-    // Determine which child is the variable and which is the bound
-    if (logicOp.children[0].type == NodeType::VARIABLE) {
-        conditionVar = std::get<std::string>(logicOp.children[0].value);
-        conditionInterval = evalArithmetic(logicOp.children[1]);
-    } else if (logicOp.children[1].type == NodeType::VARIABLE) {
-        conditionVar = std::get<std::string>(logicOp.children[1].value);
-        conditionInterval = evalArithmetic(logicOp.children[0]);
-    } else {
-        std::cerr << "[ERROR] If condition does not involve a variable!" << std::endl;
+    Interval conditionInterval;
+    
+    try {
+        if (logicOp.children[0].type == NodeType::VARIABLE) {
+            conditionVar = std::get<std::string>(logicOp.children[0].value);
+            conditionInterval = evalArithmetic(logicOp.children[1]);
+        } else if (logicOp.children[1].type == NodeType::VARIABLE) {
+            conditionVar = std::get<std::string>(logicOp.children[1].value);
+            conditionInterval = evalArithmetic(logicOp.children[0]);
+        } else {
+            std::cerr << "[ERROR] If condition does not involve a variable and an integer!" << std::endl;
+            return;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Exception while extracting if condition: " << e.what() << std::endl;
         return;
     }
 
-    std::cout << "[DEBUG] Condition variable: " << conditionVar << std::endl;
+    std::cout << "[DEBUG] Condition variable: " << conditionVar
+              << " restricted to: " << conditionInterval.lower << " to " << conditionInterval.upper << std::endl;
 
     // Clone interval store for branches
     IntervalStore ifStore = intervalStore;
     IntervalStore elseStore = intervalStore;
 
-    // Restrict condition in if-branch
     ifStore.setInterval(conditionVar, conditionInterval);
     std::cout << "[DEBUG] If-branch restricted to: " << conditionInterval.lower << " to " << conditionInterval.upper << std::endl;
 
-    // Evaluate the if-body using ifStore
     std::cout << "[DEBUG] Evaluating If-Body block." << std::endl;
     for (auto& stmt : ifBodyNode.children) {
-        ifStore.setInterval(conditionVar, evalArithmetic(stmt.children[1]));  // Update correctly
-        eval(stmt);
-    }
-    Interval ifBranchInterval = ifStore.getInterval(conditionVar);
-
-    Interval elseBranchInterval = ifBranchInterval; // Default to avoid empty case
-
-    if (elseBodyNode && !elseBodyNode->children.empty()) {
-        std::cout << "[DEBUG] Processing else branch." << std::endl;
-        Interval negatedCondition;
-        if (conditionInterval.lower == conditionInterval.upper) {
-            int val = conditionInterval.lower;
-            negatedCondition = Interval(std::numeric_limits<int>::min(), val - 1)
-                               .join(Interval(val + 1, std::numeric_limits<int>::max()));
-        } else {
-            std::cerr << "[ERROR] Unsupported condition negation." << std::endl;
+        try {
+            std::string assignedVar = std::get<std::string>(stmt.children[0].value);
+            Interval assignedValue = evalArithmetic(stmt.children[1]);
+            ifStore.setInterval(assignedVar, assignedValue);
+            eval(stmt);
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] Exception while evaluating If-Body: " << e.what() << std::endl;
             return;
         }
-
-        elseStore.setInterval(conditionVar, negatedCondition);
-
-        for (auto& stmt : elseBodyNode->children) {
-            elseStore.setInterval(conditionVar, evalArithmetic(stmt.children[1]));  // Update correctly
-            eval(stmt);
-        }
-
-        elseBranchInterval = elseStore.getInterval(conditionVar);
     }
-    Interval mergedInterval = ifBranchInterval.join(elseBranchInterval);
-    intervalStore.setInterval(conditionVar, mergedInterval);
 
+    Interval ifBranchInterval = ifStore.getInterval(conditionVar);
+
+    // Restrict condition in else-branch (b != conditionValue → valid remaining range)
+    Interval originalInterval = intervalStore.getInterval(conditionVar);
+    Interval negatedCondition;
+
+    std::cout << "[DEBUG] Original interval of " << conditionVar << " before negation: " 
+              << originalInterval.lower << " to " << originalInterval.upper << std::endl;
+
+    try {
+        if (conditionInterval.lower == conditionInterval.upper) {
+            int val = conditionInterval.lower;
+
+            if (val == originalInterval.lower) {
+                negatedCondition = Interval(val + 1, originalInterval.upper);
+            } else if (val == originalInterval.upper) {
+                negatedCondition = Interval(originalInterval.lower, val - 1);
+            } else {
+                negatedCondition = Interval(originalInterval.lower, val - 1)
+                                       .join(Interval(val + 1, originalInterval.upper));
+            }
+        } else {
+            std::cerr << "[ERROR] Unsupported condition negation due to range condition!" << std::endl;
+            return;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Exception while computing negated condition: " << e.what() << std::endl;
+        return;
+    }
+
+    elseStore.setInterval(conditionVar, negatedCondition);
+    std::cout << "[DEBUG] Else-branch restricted to: " << negatedCondition.lower << " to " << negatedCondition.upper << std::endl;
+
+    std::cout << "[DEBUG] Evaluating Else-Body block." << std::endl;
+    Interval elseBranchInterval;
+    if (elseBodyNode) {
+        for (auto& stmt : elseBodyNode->children) {
+            try {
+                std::string assignedVar = std::get<std::string>(stmt.children[0].value);
+                Interval assignedValue = evalArithmetic(stmt.children[1]);
+                elseStore.setInterval(assignedVar, assignedValue);
+                eval(stmt);
+            } catch (const std::exception& e) {
+                std::cerr << "[ERROR] Exception while evaluating Else-Body: " << e.what() << std::endl;
+                return;
+            }
+        }
+        elseBranchInterval = elseStore.getInterval(conditionVar);
+    } else {
+        elseBranchInterval = originalInterval;
+    }
+
+    Interval mergedInterval = ifBranchInterval.join(elseBranchInterval);
+
+    if (mergedInterval.lower > mergedInterval.upper) {
+        std::cerr << "[ERROR] Invalid merge! Setting default valid range.\n";
+        mergedInterval = Interval(ifBranchInterval.lower, elseBranchInterval.upper);
+    }
+
+    intervalStore.setInterval(conditionVar, mergedInterval);
     std::cout << "[DEBUG] If-Else branches merged successfully: " << mergedInterval.lower << " to " << mergedInterval.upper << std::endl;
 }
+
+
 
 
 };

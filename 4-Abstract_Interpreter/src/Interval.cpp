@@ -15,9 +15,11 @@ public:
         : lower(l), upper(u) {}
 
     // Join operation (Least Upper Bound in lattice theory)
-    Interval join(const Interval& other) {
+    Interval join(const Interval& other) const {
         return Interval(std::min(lower, other.lower), std::max(upper, other.upper));
     }
+
+
 
     // Arithmetic operations
     Interval add(const Interval& other) {
@@ -40,6 +42,18 @@ public:
         }
         int vals[] = { lower / other.lower, lower / other.upper, upper / other.lower, upper / other.upper };
         return Interval(*std::min_element(vals, vals + 4), *std::max_element(vals, vals + 4));
+    }
+    
+    Interval intersect(const Interval& other) {
+        int newLower = std::max(lower, other.lower);
+        int newUpper = std::min(upper, other.upper);
+
+        // If the intersection is invalid, return an empty interval
+        if (newLower > newUpper) {
+            return Interval(std::numeric_limits<int>::max(), std::numeric_limits<int>::min()); // Empty set
+        }
+
+        return Interval(newLower, newUpper);    
     }
 
     // Comparison operations (C♯ I J.K)
