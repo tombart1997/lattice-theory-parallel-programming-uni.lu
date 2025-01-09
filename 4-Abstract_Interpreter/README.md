@@ -21,6 +21,27 @@ on windows:
 
 In a nutshell Compile and run:
 cd 4-Abstract_Interpreter/build
+cmake --build
 cd ..
 build\Debug\absint.exe tests\easy1.c
 
+
+
+Chatgpt think this is better:
+cd C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter
+mkdir build 2>nul
+cd build
+cmake .. 
+cmake --build . --target clean
+cmake --build . 
+Debug\absint.exe ..\tests\easy1.c
+
+
+Rebuild the project: 
+
+cmake --build . --target clean
+cmake --build .
+
+Run the program again:
+
+Debug\absint.exe ..\tests\easy4.c

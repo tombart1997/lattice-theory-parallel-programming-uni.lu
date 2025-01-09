@@ -267,7 +267,8 @@ private:
         }
     }
 
-    ASTNode make_ifelse(const SV& sv){
+    ASTNode make_ifelse(const SV& sv)
+    {
         ASTNode ifelse_node(NodeType::IFELSE, std::string("IfElse"));
         for (size_t i = 0; i < sv.size(); ++i){
             ASTNode mid_node;
@@ -281,7 +282,8 @@ private:
         return ifelse_node;
     }
 
-    ASTNode make_whileloop(const SV& sv){
+    ASTNode make_whileloop(const SV& sv)
+    {
         ASTNode whileloop_node(NodeType::WHILELOOP, std::string("WhileLoop"));
         for (size_t i = 0; i < sv.size(); ++i){
             ASTNode mid_node;
