@@ -27,7 +27,7 @@ build\Debug\absint.exe tests\easy1.c
 
 
 
-Chatgpt think this is better:
+This is better
 cd C:\Users\Tom\Documents\GitHub\lattice-theory-parallel-programming-uni.lu\4-Abstract_Interpreter
 mkdir build 2>nul
 cd build
