@@ -141,15 +141,13 @@ private:
         std::string varName = std::get<std::string>(node.children[0].value);
         Interval value = evalArithmetic(node.children[1]);
 
-        if (value.lower > value.upper) {
-            std::cerr << "[ERROR] Detected invalid interval assignment: [" 
-                    << value.lower << ", " << value.upper << "] for " << varName << "\n";
-        } else {
-            std::cout << "[DEBUG] Assigning variable: " << varName << " = Interval(" 
-                    << value.lower << ", " << value.upper << ")" << std::endl;
-            intervalStore.setInterval(varName, value);
+        if (value.lower < std::numeric_limits<int>::min() || value.upper > std::numeric_limits<int>::max()) {
+            std::cerr << "[WARNING] Possible overflow when assigning to " << varName << "!\n";
         }
+
+        intervalStore.setInterval(varName, value);
     }
+
 
 
     Interval evalArithmetic(ASTNode& node) {
@@ -177,6 +175,8 @@ private:
             if (op == BinOp::DIV) {
                 if (right.lower <= 0 && right.upper >= 0) {
                     std::cerr << "[ERROR] Division by zero detected!" << std::endl;
+                    return Interval(); // Return top interval or propagate error.
+
                 }
                 return left.divide(right);
             }

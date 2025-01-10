@@ -22,17 +22,48 @@ public:
 
 
     // Arithmetic operations
+
     Interval add(const Interval& other) {
-        return Interval(lower + other.lower, upper + other.upper);
+        int newLower = lower + other.lower;
+        int newUpper = upper + other.upper;
+
+        // Detect integer overflow
+        if ((lower > 0 && other.lower > 0 && newLower < lower) ||  // Overflow check
+            (upper > 0 && other.upper > 0 && newUpper < upper)) {  
+            std::cerr << "[WARNING] Possible integer overflow detected in addition!\n";
+            return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max()); // Return top interval
+        }
+
+        return Interval(newLower, newUpper);
     }
 
     Interval subtract(const Interval& other) {
-        return Interval(lower - other.upper, upper - other.lower);
+        // Compute lower and upper bounds
+        int newLower = lower - other.upper;
+        int newUpper = upper - other.lower;
+
+        // Check for overflow or underflow
+        if (newLower > lower || newUpper < upper) {
+            std::cerr << "[WARNING] Possible integer overflow detected in subtraction!\n";
+            return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+        }
+
+        return Interval(newLower, newUpper);
     }
+
+
 
     Interval multiply(const Interval& other) {
         int vals[] = { lower * other.lower, lower * other.upper, upper * other.lower, upper * other.upper };
-        return Interval(*std::min_element(vals, vals + 4), *std::max_element(vals, vals + 4));
+        int minVal = *std::min_element(vals, vals + 4);
+        int maxVal = *std::max_element(vals, vals + 4);
+
+        if (minVal < std::numeric_limits<int>::min() || maxVal > std::numeric_limits<int>::max()) {
+            std::cerr << "[WARNING] Possible integer overflow detected in multiplication!\n";
+            return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+        }
+
+        return Interval(minVal, maxVal);
     }
 
     Interval divide(const Interval& other) {
