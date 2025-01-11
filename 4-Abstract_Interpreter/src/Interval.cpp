@@ -35,18 +35,18 @@ public:
 
     // Arithmetic operations
     Interval add(const Interval& other) {
-        int newLower = lower + other.lower;
-        int newUpper = upper + other.upper;
+        int64_t newLower = (int64_t)lower + (int64_t)other.lower;
+        int64_t newUpper = (int64_t)upper + (int64_t)other.upper;
 
-        // Detect integer overflow
-        if ((lower > 0 && other.lower > 0 && newLower < lower) ||  
-            (upper > 0 && other.upper > 0 && newUpper < upper)) {  
-            std::cerr << "[WARNING] Possible integer overflow detected in addition!\n";
+        // Correct overflow detection
+        if (newLower < std::numeric_limits<int>::min() || newUpper > std::numeric_limits<int>::max()) {
+            std::cerr << "[WARNING] Integer overflow detected in addition!\n";
             return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max()); 
         }
 
-        return Interval(newLower, newUpper);
+        return Interval((int)newLower, (int)newUpper);
     }
+
 
     Interval subtract(const Interval& other) {
         int newLower = lower - other.upper;

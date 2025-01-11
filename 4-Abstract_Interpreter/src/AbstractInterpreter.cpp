@@ -151,21 +151,32 @@ void handleAssignment(ASTNode& node) {
 
 
 Interval evalArithmetic(ASTNode& node) {
+    std::cout << "evalArithmentic:" << std::endl;
+    node.print();
     if (node.type == NodeType::INTEGER) {
         int value = std::get<int>(node.value);
         return Interval(value, value);
     } 
     else if (node.type == NodeType::VARIABLE) {
         std::string varName = std::get<std::string>(node.value);
-        
-        // Retrieve all stored intervals for the variable
+
         std::vector<Interval> intervals = intervalStore.getIntervals(varName);
+        
+        if (intervals.empty()) {
+            std::cout << "[DEBUG] No assigned value for " << varName << ". Checking preconditions...\n";
+            intervals = intervalStore.getPreconditions(varName);  // Check preconditions instead
 
-        // If multiple intervals exist, handle them properly (choose logic)
-        if (intervals.empty()) return Interval(); // Return top interval
+            if (intervals.empty()) {
+                std::cerr << "[ERROR] Variable " << varName << " has no known intervals or preconditions! Defaulting to top interval.\n";
+                return Interval();  // Default to [-∞, +∞] only if there is NO precondition.
+            }
+        }
 
-        return intervals[0]; // Choose the first interval as default (adjust as needed)
-    } 
+        std::cout << "[DEBUG] Retrieved interval for " << varName << ": [" 
+                << intervals[0].lower << ", " << intervals[0].upper << "]\n";
+
+        return intervals[0];
+    }
     else if (node.type == NodeType::ARITHM_OP) {
         if (node.children.size() < 2) {
             std::cerr << "[ERROR] Malformed arithmetic operation! Not enough operands.\n";
