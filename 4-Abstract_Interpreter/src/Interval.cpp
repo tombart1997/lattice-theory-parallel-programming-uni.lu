@@ -14,35 +14,44 @@ public:
     Interval(int l = std::numeric_limits<int>::min(), int u = std::numeric_limits<int>::max())
         : lower(l), upper(u) {}
 
+    // Check if the interval is empty
+    bool isEmpty() const {
+        return lower > upper;
+    }
+
     // Join operation (Least Upper Bound in lattice theory)
     Interval join(const Interval& other) const {
+        if (isEmpty()) return other;  
+        if (other.isEmpty()) return *this; 
+
+        // Ensure non-overlapping intervals don't forcefully merge
+        if (upper + 1 < other.lower || other.upper + 1 < lower) {
+            std::cerr << "[ERROR] Attempted to join non-overlapping intervals. Consider using multiple intervals!\n";
+            return *this;  // Keep original and warn user
+        }
+
         return Interval(std::min(lower, other.lower), std::max(upper, other.upper));
     }
 
-
-
     // Arithmetic operations
-
     Interval add(const Interval& other) {
         int newLower = lower + other.lower;
         int newUpper = upper + other.upper;
 
         // Detect integer overflow
-        if ((lower > 0 && other.lower > 0 && newLower < lower) ||  // Overflow check
+        if ((lower > 0 && other.lower > 0 && newLower < lower) ||  
             (upper > 0 && other.upper > 0 && newUpper < upper)) {  
             std::cerr << "[WARNING] Possible integer overflow detected in addition!\n";
-            return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max()); // Return top interval
+            return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max()); 
         }
 
         return Interval(newLower, newUpper);
     }
 
     Interval subtract(const Interval& other) {
-        // Compute lower and upper bounds
         int newLower = lower - other.upper;
         int newUpper = upper - other.lower;
 
-        // Check for overflow or underflow
         if (newLower > lower || newUpper < upper) {
             std::cerr << "[WARNING] Possible integer overflow detected in subtraction!\n";
             return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
@@ -50,8 +59,6 @@ public:
 
         return Interval(newLower, newUpper);
     }
-
-
 
     Interval multiply(const Interval& other) {
         int vals[] = { lower * other.lower, lower * other.upper, upper * other.lower, upper * other.upper };
@@ -68,9 +75,10 @@ public:
 
     Interval divide(const Interval& other) {
         if (other.lower <= 0 && other.upper >= 0) {
-            std::cerr << "Error: Division by zero detected in interval analysis!\n";
-            return *this;
+            std::cerr << "[ERROR] Division by zero detected in interval analysis! Returning top interval.\n";
+            return Interval();  
         }
+
         int vals[] = { lower / other.lower, lower / other.upper, upper / other.lower, upper / other.upper };
         return Interval(*std::min_element(vals, vals + 4), *std::max_element(vals, vals + 4));
     }
@@ -79,15 +87,18 @@ public:
         int newLower = std::max(lower, other.lower);
         int newUpper = std::min(upper, other.upper);
 
-        // If the intersection is invalid, return an empty interval
         if (newLower > newUpper) {
-            return Interval(std::numeric_limits<int>::max(), std::numeric_limits<int>::min()); // Empty set
+            std::cerr << "[ERROR] Invalid intersection detected! Returning explicit empty interval.\n";
+            return Interval(1, 0); // Explicit empty interval
         }
 
         return Interval(newLower, newUpper);    
     }
+    bool contains(int value) const {
+        return lower <= value && value <= upper;
+    }
 
-    // Comparison operations (C♯ I J.K)
+    // Comparison operations
     bool is_less_than(const Interval& other) {
         return upper < other.lower;
     }
@@ -100,8 +111,16 @@ public:
         return lower == other.lower && upper == other.upper;
     }
 
+    bool operator==(const Interval& other) const {
+        return lower == other.lower && upper == other.upper;
+    }
+
+    bool operator!=(const Interval& other) const {
+        return !(*this == other);
+    }
+
     void print() const {
-        std::cout << "[" << lower << ", " << upper << "]";
+            std::cout << "[" << lower << ", " << upper << "]";
     }
 };
 

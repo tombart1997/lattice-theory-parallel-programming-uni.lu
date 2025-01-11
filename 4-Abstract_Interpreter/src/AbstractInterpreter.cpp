@@ -43,146 +43,153 @@ public:
 private:
 
 
-    void handlePreconditions(ASTNode& node) {
-        std::cout << "[DEBUG] Entering handlePreconditions()\n";
-        std::string varName;
-        Interval interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());  // Initialize properly
+void handlePreconditions(ASTNode& node) {
+    std::cout << "[DEBUG] Entering handlePreconditions()\n";
+    std::string varName;
+    Interval interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
 
-        for (const auto& condition : node.children) {
-            if (condition.type != NodeType::LOGIC_OP) {
-                std::cerr << "[ERROR] Expected a logic operation, found: " << condition.type << std::endl;
-                continue;
-            }
-
-            LogicOp op;
-            bool validLogicOp = false;
-            std::visit([&](auto&& value) {
-                using T = std::decay_t<decltype(value)>;
-                if constexpr (std::is_same_v<T, LogicOp>) {
-                    op = value;
-                    validLogicOp = true;
-                } 
-                else if constexpr (std::is_same_v<T, std::string>) {
-                    if (value == "<") op = LogicOp::LE;
-                    else if (value == "<=") op = LogicOp::LEQ;
-                    else if (value == ">") op = LogicOp::GE;
-                    else if (value == ">=") op = LogicOp::GEQ;
-                    else if (value == "==") op = LogicOp::EQ;
-                    else if (value == "!=") op = LogicOp::NEQ;
-                    else {
-                        std::cerr << "[ERROR] Unknown string logic operation: " << value << std::endl;
-                        return;
-                    }
-                    validLogicOp = true;
-                }
-            }, condition.value);
-
-            if (!validLogicOp) {
-                std::cerr << "[ERROR] condition.value is not a valid LogicOp. Skipping.\n";
-                continue;
-            }
-
-            std::cout << "[DEBUG] Extracted LogicOp: " << op << std::endl;
-
-            if (condition.children.size() != 2) {
-                std::cerr << "[ERROR] Malformed logic operation, expected 2 operands.\n";
-                continue;
-            }
-
-            ASTNode left = condition.children[0];
-            ASTNode right = condition.children[1];
-
-            int bound = 0;
-            bool flipped = false;
-
-            if (left.type == NodeType::INTEGER && right.type == NodeType::VARIABLE) {
-                varName = std::get<std::string>(right.value);
-                bound = std::get<int>(left.value);
-                flipped = true;
-            } 
-            else if (left.type == NodeType::VARIABLE && right.type == NodeType::INTEGER) {
-                varName = std::get<std::string>(left.value);
-                bound = std::get<int>(right.value);
-            } 
-            else {
-                std::cerr << "[ERROR] Logical condition must involve one variable and one integer.\n";
-                continue;
-            }
-            if (!flipped) {
-                if (op == LogicOp::GEQ) interval.lower = std::max(interval.lower, bound);  // a >= 0
-                if (op == LogicOp::LEQ) interval.upper = std::min(interval.upper, bound);  // a <= 2
-            } else {  // The condition was flipped (e.g., `2 >= a`)
-                if (op == LogicOp::GEQ) interval.upper = std::min(interval.upper, bound);  // 2 >= a  →  a ≤ 2
-                if (op == LogicOp::LEQ) interval.lower = std::max(interval.lower, bound);  // 0 <= a  →  a ≥ 0
-            }
-
-            std::cout << "[DEBUG] Corrected constraint: " << varName << " in [" << interval.lower << ", " << interval.upper << "]\n";
+    for (const auto& condition : node.children) {
+        if (condition.type != NodeType::LOGIC_OP) {
+            std::cerr << "[ERROR] Expected a logic operation, found: " << condition.type << std::endl;
+            continue;
         }
 
-        if (!varName.empty()) {
-            intervalStore.setInterval(varName, interval);
-            std::cout << "[DEBUG] Interval stored successfully for: " << varName << "\n";
+        LogicOp op;
+        bool validLogicOp = false;
+        std::visit([&](auto&& value) {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T, LogicOp>) {
+                op = value;
+                validLogicOp = true;
+            } 
+            else if constexpr (std::is_same_v<T, std::string>) {
+                if (value == "<") op = LogicOp::LE;
+                else if (value == "<=") op = LogicOp::LEQ;
+                else if (value == ">") op = LogicOp::GE;
+                else if (value == ">=") op = LogicOp::GEQ;
+                else if (value == "==") op = LogicOp::EQ;
+                else if (value == "!=") op = LogicOp::NEQ;
+                else {
+                    std::cerr << "[ERROR] Unknown logic operation: " << value << std::endl;
+                    return;
+                }
+                validLogicOp = true;
+            }
+        }, condition.value);
+
+        if (!validLogicOp) {
+            std::cerr << "[ERROR] condition.value is not a valid LogicOp. Skipping.\n";
+            continue;
+        }
+
+        if (condition.children.size() != 2) {
+            std::cerr << "[ERROR] Malformed logic operation, expected 2 operands.\n";
+            continue;
+        }
+
+        ASTNode left = condition.children[0];
+        ASTNode right = condition.children[1];
+
+        int bound = 0;
+        bool flipped = false;
+
+        if (left.type == NodeType::INTEGER && right.type == NodeType::VARIABLE) {
+            varName = std::get<std::string>(right.value);
+            bound = std::get<int>(left.value);
+            flipped = true;
+        } 
+        else if (left.type == NodeType::VARIABLE && right.type == NodeType::INTEGER) {
+            varName = std::get<std::string>(left.value);
+            bound = std::get<int>(right.value);
+        } 
+        else {
+            std::cerr << "[ERROR] Logical condition must involve one variable and one integer.\n";
+            continue;
+        }
+
+        if (!flipped) {
+            if (op == LogicOp::GEQ) interval.lower = std::max(interval.lower, bound);
+            if (op == LogicOp::LEQ) interval.upper = std::min(interval.upper, bound);
         } else {
-            std::cerr << "[ERROR] No valid variable found in precondition.\n";
+            if (op == LogicOp::GEQ) interval.upper = std::min(interval.upper, bound);
+            if (op == LogicOp::LEQ) interval.lower = std::max(interval.lower, bound);
         }
+    }
+    std::cout << "[DEBUG] Corrected constraint: " << varName << " in [" << interval.lower << ", " << interval.upper << "]\n";
 
-        std::cout << "[DEBUG] Exiting handlePreconditions()\n";
+    if (!varName.empty()) {
+        intervalStore.setPrecondition(varName, interval);  // Store precondition properly
+        std::cout << "[DEBUG] Precondition stored successfully for: " << varName << " interval: [" << interval.lower << ", " << interval.upper << "]\n";
+    } else {
+        std::cerr << "[ERROR] No valid variable found in precondition.\n";
     }
 
+    std::cout << "[DEBUG] Exiting handlePreconditions()\n";
+}
+
+
+void handleAssignment(ASTNode& node) {
+    std::string varName = std::get<std::string>(node.children[0].value);
+    Interval value = evalArithmetic(node.children[1]);
+
+    // Debug output before assignment
+    std::cout << "[DEBUG] Assigning variable: " << varName 
+              << " new interval: [" << value.lower << ", " << value.upper << "]\n";
+
+    // Instead of direct assignment, handle multiple intervals
+    intervalStore.setInterval(varName, value);
+
+    // Debug output after assignment
+    std::vector<Interval> updatedIntervals = intervalStore.getIntervals(varName);
+    std::cout << "[DEBUG] Updated intervals for " << varName << ": ";
+    for (const auto& interval : updatedIntervals) {
+        std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
+    }
+    std::cout << "\n";
+}
 
 
 
-    void handleAssignment(ASTNode& node) {
+Interval evalArithmetic(ASTNode& node) {
+    if (node.type == NodeType::INTEGER) {
+        int value = std::get<int>(node.value);
+        return Interval(value, value);
+    } 
+    else if (node.type == NodeType::VARIABLE) {
+        std::string varName = std::get<std::string>(node.value);
+        
+        // Retrieve all stored intervals for the variable
+        std::vector<Interval> intervals = intervalStore.getIntervals(varName);
+
+        // If multiple intervals exist, handle them properly (choose logic)
+        if (intervals.empty()) return Interval(); // Return top interval
+
+        return intervals[0]; // Choose the first interval as default (adjust as needed)
+    } 
+    else if (node.type == NodeType::ARITHM_OP) {
         if (node.children.size() < 2) {
-            std::cerr << "[ERROR] Invalid assignment operation! Not enough children in AST node.\n";
-            return;
+            std::cerr << "[ERROR] Malformed arithmetic operation! Not enough operands.\n";
+            return Interval();
         }
+        
+        Interval left = evalArithmetic(node.children[0]);
+        Interval right = evalArithmetic(node.children[1]);
+        BinOp op = std::get<BinOp>(node.value);
 
-        std::string varName = std::get<std::string>(node.children[0].value);
-        Interval value = evalArithmetic(node.children[1]);
-
-        if (value.lower < std::numeric_limits<int>::min() || value.upper > std::numeric_limits<int>::max()) {
-            std::cerr << "[WARNING] Possible overflow when assigning to " << varName << "!\n";
-        }
-
-        intervalStore.setInterval(varName, value);
-    }
-
-
-
-    Interval evalArithmetic(ASTNode& node) {
-        if (node.type == NodeType::INTEGER) {
-            int value = std::get<int>(node.value);
-            return Interval(value, value);
-        } 
-        else if (node.type == NodeType::VARIABLE) {
-            std::string varName = std::get<std::string>(node.value);
-            return intervalStore.getInterval(varName);
-        } 
-        else if (node.type == NodeType::ARITHM_OP) {
-            if (node.children.size() < 2) {
-                std::cerr << "[ERROR] Malformed arithmetic operation! Not enough operands.\n";
-                return Interval();
+        if (op == BinOp::ADD) return left.add(right);
+        if (op == BinOp::SUB) return left.subtract(right);
+        if (op == BinOp::MUL) return left.multiply(right);
+        if (op == BinOp::DIV) {
+            if (right.lower <= 0 && right.upper >= 0) {
+                std::cerr << "[ERROR] Division by zero detected!" << std::endl;
+                return Interval(); // Return top interval or propagate error.
             }
-            
-            Interval left = evalArithmetic(node.children[0]);
-            Interval right = evalArithmetic(node.children[1]);
-            BinOp op = std::get<BinOp>(node.value);
-
-            if (op == BinOp::ADD) return left.add(right);
-            if (op == BinOp::SUB) return left.subtract(right);
-            if (op == BinOp::MUL) return left.multiply(right);
-            if (op == BinOp::DIV) {
-                if (right.lower <= 0 && right.upper >= 0) {
-                    std::cerr << "[ERROR] Division by zero detected!" << std::endl;
-                    return Interval(); // Return top interval or propagate error.
-
-                }
-                return left.divide(right);
-            }
+            return left.divide(right);
         }
-        return Interval();
     }
+    return Interval();
+}
+
 
     void checkAssertion(ASTNode& node) {
         if (node.children.empty()) {
@@ -225,148 +232,129 @@ private:
         }
     }
 
-    
-void handleIfElse(ASTNode& node) {
-    std::cout << "[DEBUG] Entering handleIfElse()" << std::endl;
 
-    // Extract Condition and Branches
-    if (node.children.size() < 2) {
-        std::cerr << "[ERROR] Malformed if-else statement (not enough children)!" << std::endl;
-        return;
+void handleIfBody(ASTNode& ifBodyNode, IntervalStore& ifStore) {
+    std::cout << "[DEBUG] Executing IF Body\n";
+    
+    // Iterate through statements in the IF body
+    for (auto& stmt : ifBodyNode.children) {
+        eval(stmt);
     }
 
+    std::cout << "[DEBUG] IF Body execution completed.\n";
+}
+
+void handleElseBody(ASTNode& elseBodyNode, IntervalStore& elseStore) {
+    std::cout << "[DEBUG] Executing ELSE Body\n";
+    
+    // Iterate through statements in the ELSE body
+    for (auto& stmt : elseBodyNode.children) {
+        eval(stmt);
+    }
+
+    std::cout << "[DEBUG] ELSE Body execution completed.\n";
+}
+
+
+
+void handleIfElse(ASTNode& node) {
+    std::cout << "[DEBUG] Entering handleIfElse()\n";
+
+    // Extract condition and branches
     ASTNode& condition = node.children[0];
     ASTNode& ifBodyNode = node.children[1];
     ASTNode* elseBodyNode = (node.children.size() > 2) ? &node.children[2] : nullptr;
 
-    if (condition.children.empty()) {
-        std::cerr << "[ERROR] Malformed if condition! No children." << std::endl;
-        return;
-    }
-
+    // Extract the logic operation
     ASTNode& logicOp = condition.children[0];
 
-    std::cout << "[DEBUG] Extracted condition node: " << logicOp.type << std::endl;
-
-    if (logicOp.children.size() != 2) {
-        std::cerr << "[ERROR] Malformed logical operation in if statement (wrong number of operands)!" << std::endl;
-        return;
-    }
-
+    // **Step 1: Extract the variable and condition interval**
     std::string conditionVar;
-    Interval conditionInterval;
-    
+    Interval ifConditionInterval;
+
     try {
-        if (logicOp.children[0].type == NodeType::VARIABLE) {
-            conditionVar = std::get<std::string>(logicOp.children[0].value);
-            conditionInterval = evalArithmetic(logicOp.children[1]);
-        } else if (logicOp.children[1].type == NodeType::VARIABLE) {
-            conditionVar = std::get<std::string>(logicOp.children[1].value);
-            conditionInterval = evalArithmetic(logicOp.children[0]);
-        } else {
-            std::cerr << "[ERROR] If condition does not involve a variable and an integer!" << std::endl;
-            return;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "[ERROR] Exception while extracting if condition: " << e.what() << std::endl;
+        conditionVar = std::get<std::string>(logicOp.children[0].value);
+        ifConditionInterval = evalArithmetic(logicOp.children[1]);
+    } catch (const std::bad_variant_access&) {
+        std::cerr << "[ERROR] Failed to extract variable or interval from condition.\n";
         return;
     }
 
-    std::cout << "[DEBUG] Condition variable: " << conditionVar
-              << " restricted to: " << conditionInterval.lower << " to " << conditionInterval.upper << std::endl;
+    // **Debug Output**
+    std::cout << "[DEBUG] IF Condition Variable: " << conditionVar << "\n";
+    std::cout << "[DEBUG] Expected IF Interval: [" << ifConditionInterval.lower << ", " << ifConditionInterval.upper << "]\n";
 
-    // Clone interval store for branches
+    // Retrieve precondition intervals
+    std::vector<Interval> preconditionIntervals = intervalStore.getPreconditions(conditionVar);
+
+    // **Debug output**
+    std::cout << "[DEBUG] Precondition Intervals for " << conditionVar << " : ";
+    for (const auto& pre : preconditionIntervals) {
+        std::cout << "[" << pre.lower << ", " << pre.upper << "] ";
+    }
+    std::cout << "\n";
+
+    // **Step 2: Check if IF condition is valid based on preconditions**
+    bool isIfConditionValid = false;
+    for (const Interval& pre : preconditionIntervals) {
+        if (pre.contains(ifConditionInterval.lower)) {
+            isIfConditionValid = true;
+            break;
+        }
+    }
+
+    if (!isIfConditionValid) {
+        std::cout << "[DEBUG] IF Condition for " << conditionVar << " is impossible due to precondition. Skipping if-branch.\n";
+        if (elseBodyNode) handleElseBody(*elseBodyNode, intervalStore);
+        return;
+    }
+
+    std::cout << "[DEBUG] IF Condition for " << conditionVar << " satisfies precondition. Continuing the IF Branch\n";
+
+    // **Step 3: Clone the interval store for the IF-branch**
     IntervalStore ifStore = intervalStore;
-    IntervalStore elseStore = intervalStore;
+    ifStore.store[conditionVar].clear();
+    ifStore.setInterval(conditionVar, ifConditionInterval);
 
-    ifStore.setInterval(conditionVar, conditionInterval);
-    std::cout << "[DEBUG] If-branch restricted to: " << conditionInterval.lower << " to " << conditionInterval.upper << std::endl;
+    std::cout << "[DEBUG] IF-branch restricted " << conditionVar << " to [" 
+              << ifConditionInterval.lower << ", " << ifConditionInterval.upper << "]\n";
 
-    std::cout << "[DEBUG] Evaluating If-Body block." << std::endl;
-    for (auto& stmt : ifBodyNode.children) {
-        try {
-            std::string assignedVar = std::get<std::string>(stmt.children[0].value);
-            Interval assignedValue = evalArithmetic(stmt.children[1]);
-            ifStore.setInterval(assignedVar, assignedValue);
-            eval(stmt);
-        } catch (const std::exception& e) {
-            std::cerr << "[ERROR] Exception while evaluating If-Body: " << e.what() << std::endl;
-            return;
-        }
-    }
+    // **Step 4: Execute IF Body**
+    handleIfBody(ifBodyNode, ifStore);
 
-    Interval ifBranchInterval = ifStore.getInterval(conditionVar);
+    // **Step 5: Compute ELSE condition and execute ELSE Body**
+    if (elseBodyNode) {
+        IntervalStore elseStore = intervalStore;
 
-    // Restrict condition in else-branch (b != conditionValue → valid remaining range)
-    Interval originalInterval = intervalStore.getInterval(conditionVar);
-    Interval negatedCondition = originalInterval.intersect(Interval(
-        std::numeric_limits<int>::min(), conditionInterval.lower - 1
-    ).join(
-        Interval(conditionInterval.upper + 1, std::numeric_limits<int>::max())
-    ));
+        // Compute the negated condition
+        std::vector<Interval> originalIntervals = intervalStore.getIntervals(conditionVar);
+        std::vector<Interval> negatedConditions;
 
-
-    std::cout << "[DEBUG] Original interval of " << conditionVar << " before negation: " 
-              << originalInterval.lower << " to " << originalInterval.upper << std::endl;
-
-    try {
-        if (conditionInterval.lower == conditionInterval.upper) {
-            int val = conditionInterval.lower;
-
-            if (val == originalInterval.lower) {
-                negatedCondition = Interval(val + 1, originalInterval.upper);
-            } else if (val == originalInterval.upper) {
-                negatedCondition = Interval(originalInterval.lower, val - 1);
-            } else {
-                negatedCondition = Interval(originalInterval.lower, val - 1)
-                                       .join(Interval(val + 1, originalInterval.upper));
+        if (ifConditionInterval.lower == ifConditionInterval.upper) {
+            int val = ifConditionInterval.lower;
+            for (const auto& orig : originalIntervals) {
+                if (orig.lower < val) negatedConditions.push_back(Interval(orig.lower, val - 1));
+                if (orig.upper > val) negatedConditions.push_back(Interval(val + 1, orig.upper));
             }
         } else {
-            std::cerr << "[ERROR] Unsupported condition negation due to range condition!" << std::endl;
-            return;
+            negatedConditions.push_back(Interval(std::numeric_limits<int>::min(), ifConditionInterval.lower - 1));
+            negatedConditions.push_back(Interval(ifConditionInterval.upper + 1, std::numeric_limits<int>::max()));
         }
-    } catch (const std::exception& e) {
-        std::cerr << "[ERROR] Exception while computing negated condition: " << e.what() << std::endl;
-        return;
-    }
 
-    elseStore.setInterval(conditionVar, negatedCondition);
-    std::cout << "[DEBUG] Else-branch restricted to: " << negatedCondition.lower << " to " << negatedCondition.upper << std::endl;
-
-    std::cout << "[DEBUG] Evaluating Else-Body block." << std::endl;
-    Interval elseBranchInterval;
-    if (elseBodyNode) {
-        for (auto& stmt : elseBodyNode->children) {
-            try {
-                std::string assignedVar = std::get<std::string>(stmt.children[0].value);
-                Interval assignedValue = evalArithmetic(stmt.children[1]);
-                elseStore.setInterval(assignedVar, assignedValue);
-                eval(stmt);
-            } catch (const std::exception& e) {
-                std::cerr << "[ERROR] Exception while evaluating Else-Body: " << e.what() << std::endl;
-                return;
-            }
+        for (const auto& neg : negatedConditions) {
+            elseStore.setInterval(conditionVar, neg);
         }
-        elseBranchInterval = elseStore.getInterval(conditionVar);
-    } else {
-        elseBranchInterval = originalInterval;
+
+        std::cout << "[DEBUG] ELSE-branch restricted " << conditionVar << " to ";
+        for (const auto& neg : negatedConditions) {
+            std::cout << "[" << neg.lower << ", " << neg.upper << "] ";
+        }
+        std::cout << "\n";
+
+        // Execute ELSE Body
+        handleElseBody(*elseBodyNode, elseStore);
     }
-
-    Interval mergedInterval = Interval(
-        std::min(ifBranchInterval.lower, elseBranchInterval.lower),
-        std::max(ifBranchInterval.upper, elseBranchInterval.upper)
-    );
-
-
-    if (mergedInterval.lower > mergedInterval.upper) {
-        std::cerr << "[ERROR] Invalid merge! Setting default valid range.\n";
-        mergedInterval = Interval(ifBranchInterval.lower, elseBranchInterval.upper);
-    }
-
-    intervalStore.setInterval(conditionVar, mergedInterval);
-    std::cout << "[DEBUG] If-Else branches merged successfully: " << mergedInterval.lower << " to " << mergedInterval.upper << std::endl;
 }
-
 
 
 
