@@ -12,7 +12,13 @@ public:
     std::map<std::string, std::vector<Interval>> store;
     std::map<std::string, std::vector<Interval>> preconditions; // Store preconditions separately
 
-    void setInterval(const std::string& var, Interval newInterval) {
+void setInterval(const std::string& var, Interval newInterval) {
+    // Print the current state of the store for the variable
+    if (store.find(var) != store.end()) {
+        for (const auto& interval : store[var]) {
+            std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
+        }
+    }
     std::vector<Interval>& existingIntervals = store[var];
 
     // Try merging with existing intervals
@@ -29,6 +35,8 @@ public:
 
     if (!merged) {
         // If no merging happened, store separately
+        std::cout << "[DEBUG] No overlap found. Adding new interval: [" 
+                  << newInterval.lower << ", " << newInterval.upper << "]\n";
         existingIntervals.push_back(newInterval);
     }
 
@@ -37,7 +45,14 @@ public:
         return a.lower < b.lower;
     });
 
+    // Print the updated state of the store for the variable
+    std::cout << "[DEBUG] Updated intervals for `" << var << "`: ";
+    for (const auto& interval : existingIntervals) {
+        std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
     }
+    std::cout << "\n";
+}
+
 
     // **New Function: Get Precondition Intervals**
     std::vector<Interval> getPreconditions(const std::string& var) {
@@ -82,6 +97,26 @@ public:
             std::cout << "}\n";
         }
     }
+
+    void replaceInterval(const std::string& var, Interval newInterval) {
+        std::cout << "[DEBUG] Replacing intervals for variable `" << var 
+                << "` with new interval: [" << newInterval.lower 
+                << ", " << newInterval.upper << "]\n";
+
+        // Clear existing intervals for the variable
+        store[var].clear();
+
+        // Add the new interval
+        store[var].push_back(newInterval);
+
+        // Print updated state
+        std::cout << "[DEBUG] Updated intervals for `" << var << "`: ";
+        for (const auto& interval : store[var]) {
+            std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
+        }
+        std::cout << "\n";
+    }
+
 };
 
 #endif

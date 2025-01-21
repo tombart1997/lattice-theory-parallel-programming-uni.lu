@@ -19,19 +19,24 @@ public:
         return lower > upper;
     }
 
+
+
     // Join operation (Least Upper Bound in lattice theory)
     Interval join(const Interval& other) const {
-        if (isEmpty()) return other;  
-        if (other.isEmpty()) return *this; 
+        if (isEmpty()) return other;
+        if (other.isEmpty()) return *this;
 
-        // Ensure non-overlapping intervals don't forcefully merge
+        // ✅ Handle non-overlapping intervals **without force-merging**
         if (upper + 1 < other.lower || other.upper + 1 < lower) {
-            std::cerr << "[ERROR] Attempted to join non-overlapping intervals. Consider using multiple intervals!\n";
-            return *this;  // Keep original and warn user
+            std::cerr << "[WARNING] Non-overlapping intervals detected: ["
+                    << lower << ", " << upper << "] and ["
+                    << other.lower << ", " << other.upper << "]\n";
+            return *this;  // Return the original interval to avoid incorrect expansion
         }
 
         return Interval(std::min(lower, other.lower), std::max(upper, other.upper));
     }
+
 
     // Arithmetic operations
     Interval add(const Interval& other) {

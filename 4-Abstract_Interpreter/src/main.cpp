@@ -3,9 +3,13 @@
 #include "parser.hpp"
 #include "ast.hpp"
 #include "AbstractInterpreter.cpp"
-
+#include "EquationalAbstractInterpreter.cpp"
+#include <windows.h>  // Required for SetConsoleOutputCP()
+#include <iostream>
 
 int main(int argc, char** argv) {
+    SetConsoleOutputCP(CP_UTF8); // Force UTF-8 encoding in the console
+
     if (argc != 2) {
         std::cout << "usage: " << argv[0] << " tests/00.c" << std::endl;
         return 1;
@@ -29,8 +33,8 @@ int main(int argc, char** argv) {
     ast.print();
 
     // Pass AST to Abstract Interpreter for evaluation
-    //EquationalAbstractInterpreter interpreter;
-    AbstractInterpreter interpreter;
+    EquationalAbstractInterpreter interpreter;
+    //AbstractInterpreter interpreter;
     interpreter.eval(ast);
 
 
