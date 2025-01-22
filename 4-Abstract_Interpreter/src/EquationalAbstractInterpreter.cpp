@@ -37,6 +37,7 @@ public:
      * @brief Evaluates a given AST node by generating and solving equations.
      * @param node The root AST node of the program.
      */
+    
     void eval(ASTNode& node) {
         int location = 0; // Track program locations
 
@@ -48,6 +49,8 @@ public:
         solveFixpoint();
         std::cout << "[INFO] Fixpoint computation completed.\n";
     }
+
+
 
 private:
     void evalNode(ASTNode& node, int& location) {
@@ -63,12 +66,67 @@ private:
             case NodeType::IFELSE:
                 handleIfElse(node, location);
                 break;
+            case NodeType::WHILELOOP:
+                handleWhileLoop(node, location);
+                break;
+            case NodeType::POST_CON:
+                checkAssertion(node, location);
+                break;
             default:
                 for (auto& child : node.children) {
                     evalNode(child, location);
                 }
         }
     }
+
+void checkAssertion(ASTNode& node, int location) {
+    if (node.children.empty()) {
+        std::cerr << "[ERROR] Assertion check failed! No condition found.\n";
+        return;
+    }
+    ASTNode& condition = node.children[0];
+    Interval left = evalArithmetic(condition.children[0], location);
+    Interval right = evalArithmetic(condition.children[1], location);
+    LogicOp op = std::get<LogicOp>(condition.value);
+    bool result = false;
+
+    switch (op) {
+        case LogicOp::EQ:
+            result = left.is_equal(right);
+            break;
+        case LogicOp::LEQ:
+            result = left.upper <= right.upper;
+            break;
+        case LogicOp::GEQ:
+            result = left.lower >= right.lower;
+            break;
+        case LogicOp::LE:
+            result = left.upper < right.lower;
+            break;
+        case LogicOp::GE:
+            result = left.lower > right.upper;
+            break;
+        default:
+            std::cerr << "[ERROR] Unsupported logic operation in assertion.\n";
+            return;
+    }
+
+    if (result) {
+        std::cout << "[OK] Assertion passed. ";
+        left.print();
+        std::cout << " " << op << " ";
+        right.print();
+        std::cout << "\n";
+    } else {
+        std::cerr << "[FAIL] Assertion failed! Condition: ";
+        left.print();
+        std::cerr << " " << op << " ";
+        right.print();
+        std::cerr << "\n";
+    }
+}
+
+
 
     void handlePreconditions(ASTNode& node, int location) {
         std::cout << "[DEBUG] Entering handlePreconditions()\n";
@@ -162,7 +220,7 @@ private:
         std::string varName = std::get<std::string>(node.children[0].value);
         Interval value = evalArithmetic(node.children[1], location);
 
-        programStates[location].setInterval(varName, value);
+        programStates[location].replaceInterval(varName, value);
         programEquations[location] = "Xℓ" + std::to_string(location) + " = "
             "C(" + varName + " ← " + std::to_string(value.lower) + ", Xℓ" + std::to_string(location - 1) + ")";
 
@@ -198,106 +256,48 @@ void handleElseBody(ASTNode& elseBodyNode, IntervalStore& elseStore, int locatio
     std::cout << "[DEBUG] ELSE Body execution completed.\n";
 }
 
+
 void handleIfElse(ASTNode& node, int& location) {
     std::cout << "[DEBUG] Entering handleIfElse()\n";
 
-    // Increment locations for conditional and branches
+    // Define program locations
     int condLoc = location++;
     int ifLoc = location++;
     int elseLoc = location++;
     int endLoc = location++;
-
-    std::cout << "[DEBUG] Assigned locations: condLoc=" << condLoc
-              << ", ifLoc=" << ifLoc
-              << ", elseLoc=" << elseLoc
-              << ", endLoc=" << endLoc << "\n";
-
-    // Extract condition and branches
+    // Extract components of the if-else structure
     ASTNode& condition = node.children[0];
     ASTNode& ifBodyNode = node.children[1];
     ASTNode* elseBodyNode = (node.children.size() > 2) ? &node.children[2] : nullptr;
-
-    // Validate the condition node
-    if (condition.children.empty() || condition.children[0].type != NodeType::LOGIC_OP) {
-        std::cerr << "[ERROR] Malformed condition in IF-ELSE statement.\n";
-        return;
-    }
-
-    // Access the Logic Operation node
-    ASTNode& logicOp = condition.children[0];
-
-    // Validate Logic Operation node
-    if (logicOp.children.size() != 2) {
-        std::cerr << "[ERROR] Malformed logic operation in condition.\n";
-        return;
-    }
-
-    ASTNode& leftOperand = logicOp.children[0];
-    ASTNode& rightOperand = logicOp.children[1];
-    std::string conditionVar;
-    Interval ifConditionInterval;
-
-    try {
-        // Extract variable and interval from the condition
-        conditionVar = std::get<std::string>(leftOperand.value);
-        ifConditionInterval = evalArithmetic(rightOperand, condLoc);
-    } catch (const std::bad_variant_access&) {
-        std::cerr << "[ERROR] Failed to extract variable or interval from condition.\n";
-        return;
-    }
-
-    // Clone interval store for the IF branch
     IntervalStore ifStore = programStates[condLoc];
-    ifStore.store[conditionVar].clear();
-    ifStore.setInterval(conditionVar, ifConditionInterval);
+    IntervalStore elseStore = programStates[condLoc];
 
-    // Debug IF branch
-    std::cout << "[DEBUG] IF branch restricted " << conditionVar << " to ["
-              << ifConditionInterval.lower << ", " << ifConditionInterval.upper << "]\n";
+    // Process the condition for the IF branch
 
-    // Execute the IF Body
+    Interval conditionInterval = evalArithmetic(ifBodyNode, condLoc);
+    std::cout << "[DEBUG] Evaluated condition interval: [" 
+              << conditionInterval.lower << ", " << conditionInterval.upper << "]\n";
+    ifStore.setInterval(std::get<std::string>(condition.value), conditionInterval);
+
+    // Evaluate the IF body
     handleIfBody(ifBodyNode, ifStore, ifLoc);
 
-    // Handle ELSE branch if present
+    // Process the ELSE branch if it exists
     if (elseBodyNode) {
-        IntervalStore elseStore = programStates[condLoc];
+        IntervalStore negatedElseStore = programStates[condLoc];
 
-        // Compute the negated condition intervals
-        std::vector<Interval> originalIntervals = programStates[condLoc].getIntervals(conditionVar);
-        std::vector<Interval> negatedConditions;
+        // Handle negation logic for the condition
+        negatedElseStore.setInterval(
+            std::get<std::string>(condition.value),
+            Interval(std::numeric_limits<int>::min(), conditionInterval.lower - 1)
+        );
+        handleElseBody(*elseBodyNode, negatedElseStore, elseLoc);
 
-        if (ifConditionInterval.lower == ifConditionInterval.upper) {
-            int val = ifConditionInterval.lower;
-            for (const auto& orig : originalIntervals) {
-                if (orig.lower < val) negatedConditions.push_back(Interval(orig.lower, val - 1));
-                if (orig.upper > val) negatedConditions.push_back(Interval(val + 1, orig.upper));
-            }
-        } else {
-            negatedConditions.push_back(Interval(std::numeric_limits<int>::min(), ifConditionInterval.lower - 1));
-            negatedConditions.push_back(Interval(ifConditionInterval.upper + 1, std::numeric_limits<int>::max()));
-        }
-
-        for (const auto& neg : negatedConditions) {
-            elseStore.setInterval(conditionVar, neg);
-        }
-
-        std::cout << "[DEBUG] ELSE branch restricted " << conditionVar << " to ";
-        for (const auto& neg : negatedConditions) {
-            std::cout << "[" << neg.lower << ", " << neg.upper << "] ";
-        }
-        std::cout << "\n";
-
-        // Execute the ELSE Body
-        handleElseBody(*elseBodyNode, elseStore, elseLoc);
     }
-
-    // Merge results of IF and ELSE branches
-    programEquations[endLoc] = "Xℓ" + std::to_string(endLoc) + " = "
-        "Xℓ" + std::to_string(ifLoc) + " ∪ Xℓ" + (elseBodyNode ? std::to_string(elseLoc) : "∅");
-
-    std::cout << "[DEBUG] Exiting handleIfElse()\n";
-}
-
+    // Merge IF and ELSE intervals into the end location
+    programStates[endLoc] = programStates[ifLoc];
+    programStates[endLoc].join(programStates[elseLoc]);
+} 
 
 
 
@@ -307,22 +307,30 @@ void handleIfElse(ASTNode& node, int& location) {
             return Interval(value, value);
         } else if (node.type == NodeType::VARIABLE) {
             auto varName = std::get<std::string>(node.value);
-            
-            // First, check for intervals in the current program state
-            auto intervals = programStates[location].getIntervals(varName);
-            if (!intervals.empty()) {
-                return intervals.front();
+
+            // Traverse backward to find the most recent interval
+            int currentLoc = location;
+            while (currentLoc >= 0) {
+                auto intervals = programStates[currentLoc].getIntervals(varName);
+                if (!intervals.empty()) {
+                    return intervals.front();
+                }
+                --currentLoc;
             }
 
-            // If not found, fall back on preconditions
-            intervals = programStates[0].getPreconditions(varName);
-            if (!intervals.empty()) {
-                return intervals.front();
+            // Fallback to preconditions if no interval was found
+            auto preconditions = programStates[0].getPreconditions(varName);
+            if (!preconditions.empty()) {
+                std::cout << "[DEBUG] Using preconditions for `" << varName << "`: ";
+                preconditions.front().print();
+                std::cout << "\n";
+                return preconditions.front();
             }
 
-            // Default to top interval if no information is available
-            std::cerr << "[ERROR] Variable `" << varName << "` has no known intervals or preconditions! Defaulting to top interval.\n";
-            return Interval();
+            // Default to the top interval [-∞, ∞]
+            std::cerr << "[ERROR] Variable `" << varName 
+                    << "` has no known intervals or preconditions! Defaulting to top interval.\n";
+            return Interval(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
         } else if (node.type == NodeType::ARITHM_OP) {
             auto left = evalArithmetic(node.children[0], location);
             auto right = evalArithmetic(node.children[1], location);
@@ -337,61 +345,132 @@ void handleIfElse(ASTNode& node, int& location) {
     }
 
 
-    void solveFixpoint() {
+void solveFixpoint() {
+    int iteration = 0;
+
+    while (changed) {
+        changed = false;
+        std::cout << "[DEBUG] Fixpoint iteration " << iteration << " started...\n";
+
+        for (auto& [loc, equation] : programEquations) {
+            std::cout << "[TRACE] Evaluating: " << equation << "\n";
+
+            // Parse equation and update intervals
+            std::regex eq_regex(R"(Xℓ(\d+) = C\((\w+) ← (-?\d+), Xℓ(\d+)\))");
+            std::smatch match;
+
+            if (std::regex_search(equation, match, eq_regex)) {
+                std::string var = match[2].str();
+                int value = std::stoi(match[3].str());
+                Interval newInterval(value, value);
+
+                // Retrieve previous intervals for comparison
+                std::vector<Interval> prevIntervals = programStates[loc].getIntervals(var);
+
+                std::cout << "[DEBUG] Old intervals for `" << var << "`: ";
+                for (const auto& interval : prevIntervals) {
+                    std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
+                }
+                std::cout << "\n";
+
+                // Replace interval if it changes
+                if (prevIntervals.empty() || !(prevIntervals.back() == newInterval)) {
+                    programStates[loc].replaceInterval(var, newInterval);
+                    changed = true;
+                    std::cout << "[UPDATE] Updated Xℓ" << loc << " to [" << newInterval.lower << ", " << newInterval.upper << "]\n";
+                } else {
+                    std::cout << "[INFO] No change for `" << var << "` at Xℓ" << loc << ".\n";
+                }
+            }
+        }
+        iteration++;
+    }
+
+    std::cout << "[INFO] Fixpoint reached after " << iteration << " iterations.\n";
+}
+
+
+   void handleWhileLoop(ASTNode& node, int& location) {
+        std::cout << "[DEBUG] Entering handleWhileLoop()\n";
+        int condLoc = location++;
+        int bodyLoc = location++;
+        int endLoc = location++;
+
+        IntervalStore loopState = evaluateLoopCondition(node.children[0], condLoc);
+        if (loopState.store.empty()) {
+            std::cerr << "[ERROR] Failed to evaluate loop condition.\n";
+            return;
+        }
+
+        IntervalStore finalState = processLoopBody(loopState, node.children[1], bodyLoc, condLoc);
+
+        programStates[endLoc] = finalState;
+        std::cout << "[DEBUG] Exiting handleWhileLoop()\n";
+    }
+
+    IntervalStore evaluateLoopCondition(ASTNode& conditionNode, int condLoc) {
+        std::cout << "[DEBUG] Evaluating loop condition...\n";
+        if (conditionNode.children.empty() || conditionNode.children[0].type != NodeType::LOGIC_OP) {
+            std::cerr << "[ERROR] Malformed loop condition.\n";
+            return IntervalStore();
+        }
+
+        ASTNode& logicOp = conditionNode.children[0];
+        if (logicOp.children.size() != 2) {
+            std::cerr << "[ERROR] Malformed logic operation in loop condition.\n";
+            return IntervalStore();
+        }
+
+        ASTNode& leftOperand = logicOp.children[0];
+        ASTNode& rightOperand = logicOp.children[1];
+        std::string varName;
+        Interval conditionInterval;
+
+        try {
+            varName = std::get<std::string>(leftOperand.value);
+            conditionInterval = evalArithmetic(rightOperand, condLoc);
+        } catch (const std::bad_variant_access&) {
+            std::cerr << "[ERROR] Failed to extract variable or interval from condition.\n";
+            return IntervalStore();
+        }
+
+        IntervalStore loopState;
+        loopState.setInterval(varName, conditionInterval);
+        std::cout << "[DEBUG] Condition variable: " << varName << " Interval: [" 
+                  << conditionInterval.lower << ", " << conditionInterval.upper << "]\n";
+
+        return loopState;
+    }
+
+    IntervalStore processLoopBody(IntervalStore& loopState, ASTNode& loopBody, int bodyLoc, int condLoc) {
+        bool loopChanged = true;
         int iteration = 0;
 
-        while (changed) {
-            changed = false; // Reset at the start of each iteration
-            std::cout << "[DEBUG] Fixpoint iteration " << iteration << " started...\n";
+        while (loopChanged) {
+            loopChanged = false;
+            IntervalStore iterState = loopState;
 
-            for (auto& [loc, equation] : programEquations) {
-                std::cout << "[TRACE] Evaluating: " << equation << "\n";
+            evalNode(loopBody, bodyLoc);
 
-                // Parse and evaluate the equation
-                std::regex eq_regex(R"(Xℓ(\d+) = C\((\w+) ← (-?\d+), Xℓ(\d+)\))");
-                std::smatch match;
-
-                if (std::regex_search(equation, match, eq_regex)) {
-                    std::string var = match[2].str();
-                    int value = std::stoi(match[3].str());
-
-                    Interval newInterval(value, value);
-
-                    // Get the current intervals for the variable
-                    std::vector<Interval> prevIntervals = programStates[loc].getIntervals(var);
-
-                    // Print old and new intervals for debugging
-                    std::cout << "[DEBUG] Old interval for `" << var << "`: ";
-                    if (!prevIntervals.empty()) {
-                        for (const auto& interval : prevIntervals) {
-                            std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
-                        }
-                    } else {
-                        std::cout << "(none)";
-                    }
-                    std::cout << "\n";
-
-                    std::cout << "[DEBUG] New interval for `" << var << "`: [" 
-                            << newInterval.lower << ", " << newInterval.upper << "]\n";
-
-                    // Check if the new interval is different
-                    if (prevIntervals.empty() || !(prevIntervals.back() == newInterval)) {
-                        changed = true;
-                        programStates[loc].replaceInterval(var, newInterval);
-                        std::cout << "[UPDATE] Xℓ" << loc << " updated to [" 
-                                << newInterval.lower << ", " 
-                                << newInterval.upper << "]\n";
-                    } else {
-                        std::cout << "[INFO] No change detected for `" << var << "` at Xℓ" << loc << ", skipping update.\n";
+            for (const auto& [var, intervals] : programStates[bodyLoc].store) {
+                for (const Interval& interval : intervals) {
+                    if (!loopState.setInterval(var, interval)) {
+                        loopChanged = true;
                     }
                 }
+            }
+
+            if (iteration > 5) {
+                loopChanged = loopState.applyWidening();
             }
 
             iteration++;
         }
 
-        std::cout << "[INFO] Fixpoint reached after " << iteration << " iterations.\n";
+        std::cout << "[DEBUG] Loop fixpoint reached after " << iteration << " iterations.\n";
+        return loopState;
     }
+
 
 };
 

@@ -26,7 +26,7 @@ public:
         if (isEmpty()) return other;
         if (other.isEmpty()) return *this;
 
-        // ✅ Handle non-overlapping intervals **without force-merging**
+        //  Handle non-overlapping intervals **without force-merging**
         if (upper + 1 < other.lower || other.upper + 1 < lower) {
             std::cerr << "[WARNING] Non-overlapping intervals detected: ["
                     << lower << ", " << upper << "] and ["
@@ -99,6 +99,14 @@ public:
 
         return Interval(newLower, newUpper);    
     }
+
+    Interval widen(const Interval& other) const {
+        int widenedLower = (other.lower < lower) ? std::numeric_limits<int>::min() : lower;
+        int widenedUpper = (other.upper > upper) ? std::numeric_limits<int>::max() : upper;
+        return Interval(widenedLower, widenedUpper);
+    }
+
+
     bool contains(int value) const {
         return lower <= value && value <= upper;
     }

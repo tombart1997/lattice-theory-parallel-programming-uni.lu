@@ -12,7 +12,7 @@ public:
     std::map<std::string, std::vector<Interval>> store;
     std::map<std::string, std::vector<Interval>> preconditions; // Store preconditions separately
 
-void setInterval(const std::string& var, Interval newInterval) {
+bool setInterval(const std::string& var, Interval newInterval) {
     // Print the current state of the store for the variable
     if (store.find(var) != store.end()) {
         for (const auto& interval : store[var]) {
@@ -44,13 +44,7 @@ void setInterval(const std::string& var, Interval newInterval) {
     std::sort(existingIntervals.begin(), existingIntervals.end(), [](const Interval& a, const Interval& b) {
         return a.lower < b.lower;
     });
-
-    // Print the updated state of the store for the variable
-    std::cout << "[DEBUG] Updated intervals for `" << var << "`: ";
-    for (const auto& interval : existingIntervals) {
-        std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
-    }
-    std::cout << "\n";
+    return merged;
 }
 
 
@@ -72,6 +66,7 @@ void setInterval(const std::string& var, Interval newInterval) {
 
     // Get all intervals for a variable
     std::vector<Interval> getIntervals(const std::string& var) {
+        auto it = store.find(var);
         if (store.find(var) == store.end()) return {};
         return store[var];
     }
@@ -115,6 +110,26 @@ void setInterval(const std::string& var, Interval newInterval) {
             std::cout << "[" << interval.lower << ", " << interval.upper << "] ";
         }
         std::cout << "\n";
+    }
+
+
+     /**
+     * @brief Applies widening to all variables with multiple intervals.
+     * @return True if any interval was widened, false otherwise.
+     */
+    bool applyWidening() {
+        bool changed = false;
+        for (auto& [var, intervals] : store) {
+            if (intervals.size() > 1) {
+                Interval widenedInterval = intervals.front();
+                for (size_t i = 1; i < intervals.size(); ++i) {
+                    widenedInterval = widenedInterval.widen(intervals[i]);
+                }
+                store[var] = { widenedInterval };  // Replace with the widened result
+                changed = true;
+            }
+        }
+        return changed;
     }
 
 };
